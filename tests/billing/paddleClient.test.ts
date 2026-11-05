@@ -23,3 +23,4 @@ describe('Paddle Checkout Layer', () => {
     expect(session.checkoutUrl).toContain('checkout');
   });
 });
+

@@ -27,3 +27,4 @@ describe('Production Deployment Scaffolding', () => {
     expect(deploymentDoc).toContain('PostgreSQL');
   });
 });
+

@@ -41,3 +41,4 @@ describe('Auth Service Cryptography', () => {
     expect(verifySessionToken(expiredToken)).toBeNull();
   });
 });
+

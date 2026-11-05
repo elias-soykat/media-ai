@@ -166,3 +166,4 @@ docker compose exec app npx prisma migrate deploy
 ```bash
 docker compose exec -t postgres pg_dump -U app_user -d app_db > /opt/backups/backup_$(date +%F).sql
 ```
+

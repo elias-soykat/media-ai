@@ -35,3 +35,4 @@ describe('POST /api/billing/checkout Route', () => {
     expect(json.pack.credits).toBe(200);
   });
 });
+

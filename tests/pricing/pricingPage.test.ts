@@ -14,3 +14,4 @@ describe('Pricing Page Plans', () => {
     expect(APP_CONSTRAINTS.billing.initialFreeCredits).toBe(1);
   });
 });
+

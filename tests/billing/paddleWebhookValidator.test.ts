@@ -37,3 +37,4 @@ describe('Paddle Webhook Cryptographic Verification', () => {
     expect(verifyPaddleWebhookSignature(payload, 'ts=12345', secret)).toBe(false);
   });
 });
+

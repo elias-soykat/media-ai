@@ -6,3 +6,4 @@ describe('Account Dashboard Configuration', () => {
     expect(APP_CONSTRAINTS.billing.initialFreeCredits).toBe(1);
   });
 });
+

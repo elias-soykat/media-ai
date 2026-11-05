@@ -50,3 +50,4 @@ describe('Auth API Routes', () => {
     expect(cookieHeader).toContain('session_token=');
   });
 });
+
