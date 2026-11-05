@@ -3,6 +3,14 @@ import { parseWebhookPayload, completeJob, failJob } from '@/lib/jobs/jobManager
 
 export async function POST(req: NextRequest) {
   try {
+    const webhookSecret = process.env.AI_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const signature = req.headers.get('x-webhook-secret') || req.headers.get('authorization');
+      if (signature !== webhookSecret && signature !== `Bearer ${webhookSecret}`) {
+        return NextResponse.json({ error: 'Unauthorized webhook call' }, { status: 401 });
+      }
+    }
+
     const rawPayload = await req.json();
     const parsed = parseWebhookPayload(rawPayload);
 
@@ -24,4 +32,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

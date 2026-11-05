@@ -57,8 +57,19 @@ export function MediaDropzone({
           );
           return;
         }
-      } catch {
-        // Fall back to continuing if browser preview failed to decode metadata early
+
+        if (
+          meta.width > constraints.video.maxResolution.width ||
+          meta.height > constraints.video.maxResolution.height
+        ) {
+          setErrorMessage(
+            `Video resolution (${meta.width}x${meta.height}) exceeds max limit of ${constraints.video.maxResolution.width}x${constraints.video.maxResolution.height} (1080p).`
+          );
+          return;
+        }
+      } catch (err) {
+        setErrorMessage('Invalid or corrupt video file. Unable to decode video.');
+        return;
       }
     }
 

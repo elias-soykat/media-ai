@@ -37,51 +37,34 @@ export function parseWebhookPayload(payload: any): ParsedWebhookResult {
 }
 
 export async function completeJob(jobId: string, outputUrl: string) {
-  const existingJob = await prisma.job.findUnique({
-    where: { id: jobId },
-  });
-
-  if (!existingJob) {
-    throw new Error(`Job ${jobId} not found`);
-  }
-
-  // Idempotency: if already completed, do nothing
-  if (existingJob.status === 'COMPLETED') {
-    return existingJob;
-  }
-
   const retentionHours = APP_CONSTRAINTS.storage.retentionHours;
   const expiresAt = new Date(Date.now() + retentionHours * 60 * 60 * 1000);
 
-  return prisma.job.update({
-    where: { id: jobId },
+  // Atomic conditional update to prevent duplicate webhook delivery race conditions
+  const updateResult = await prisma.job.updateMany({
+    where: {
+      id: jobId,
+      status: { not: 'COMPLETED' },
+    },
     data: {
       status: 'COMPLETED',
       outputUrl,
       expiresAt,
     },
   });
+
+  return updateResult;
 }
 
 export async function failJob(jobId: string, errorMessage: string) {
-  const existingJob = await prisma.job.findUnique({
-    where: { id: jobId },
-  });
-
-  if (!existingJob) {
-    throw new Error(`Job ${jobId} not found`);
-  }
-
-  if (existingJob.status === 'COMPLETED') {
-    return existingJob;
-  }
-
-  return prisma.job.update({
-    where: { id: jobId },
+  return prisma.job.updateMany({
+    where: {
+      id: jobId,
+      status: { not: 'COMPLETED' },
+    },
     data: {
       status: 'FAILED',
       errorMessage,
     },
   });
 }
-

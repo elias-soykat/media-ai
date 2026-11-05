@@ -19,6 +19,7 @@ export function buildStorageKey({ userId, toolType, extension }: StorageKeyParam
 export interface PresignedUploadUrlOptions {
   key: string;
   contentType: string;
+  fileSizeBytes?: number;
   expiresInSeconds?: number;
 }
 
@@ -33,6 +34,7 @@ export async function generatePresignedUploadUrl(
     Bucket: bucket,
     Key: options.key,
     ContentType: options.contentType,
+    ...(options.fileSizeBytes ? { ContentLength: options.fileSizeBytes } : {}),
   });
 
   return getSignedUrl(client, command, { expiresIn });
