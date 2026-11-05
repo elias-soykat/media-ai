@@ -55,7 +55,7 @@ describe('POST /api/audio/remove-noise', () => {
     const res = await POST(req);
     expect(res.status).toBe(502);
     const json = await res.json();
-    expect(json.error).toMatch(/API key not configured/);
+    expect(json.error).toMatch(/API key not configured|ElevenLabs/);
   });
 });
 

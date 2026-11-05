@@ -92,8 +92,8 @@ export default function MyProjectsPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-zinc-500 text-xs">
-                      {new Date(job.createdAt).toLocaleString()}
+                    <td className="px-6 py-4 text-zinc-500 text-xs font-mono" suppressHydrationWarning>
+                      {new Date(job.createdAt).toISOString().replace('T', ' ').slice(0, 19)}
                     </td>
                     <td className="px-6 py-4">
                       {expired ? (
