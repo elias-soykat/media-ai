@@ -18,5 +18,15 @@ describe('AI Photo Provider Adapter', () => {
     expect(result.outputUrl).toBeDefined();
     expect(result.format).toBe('png');
   });
+
+  it('should preserve base64 data URLs without appending invalid file extensions in mock mode', async () => {
+    const provider = new MockPhotoAiProvider();
+    const dataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const result = await provider.removeBackground({
+      imageUrl: dataUrl,
+    });
+    expect(result.success).toBe(true);
+    expect(result.outputUrl).toBe(dataUrl);
+  });
 });
 

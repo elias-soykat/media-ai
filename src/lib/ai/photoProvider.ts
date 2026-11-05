@@ -38,10 +38,13 @@ export class MockPhotoAiProvider implements PhotoAiProvider {
       };
     }
 
-    // In mock mode, construct a mock cutout URL pointing to the transparent variant
-    const outputUrl = options.imageUrl.includes('?')
-      ? `${options.imageUrl}&cutout=true`
-      : `${options.imageUrl.replace(/\.[a-zA-Z0-9]+$/, '')}_cutout.png`;
+    // In mock mode, if imageUrl is a base64 data URL, return it directly so image decoding succeeds
+    let outputUrl = options.imageUrl;
+    if (!options.imageUrl.startsWith('data:')) {
+      outputUrl = options.imageUrl.includes('?')
+        ? `${options.imageUrl}&cutout=true`
+        : `${options.imageUrl.replace(/\.[a-zA-Z0-9]+$/, '')}_cutout.png`;
+    }
 
     return {
       success: true,
@@ -73,17 +76,29 @@ export class RemoveBgProvider implements PhotoAiProvider {
     }
 
     try {
+      const isDataUrl = options.imageUrl.startsWith('data:');
+      const payload: Record<string, unknown> = {
+        size: options.size || 'auto',
+        format: options.format || 'png',
+      };
+
+      if (isDataUrl) {
+        // Strip data:image/...;base64,
+        payload.image_file_b64 = options.imageUrl.replace(
+          /^data:image\/[a-zA-Z0-9+.-]+;base64,/,
+          ''
+        );
+      } else {
+        payload.image_url = options.imageUrl;
+      }
+
       const response = await fetch('https://api.remove.bg/v1.0/removebg', {
         method: 'POST',
         headers: {
           'X-Api-Key': key,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          image_url: options.imageUrl,
-          size: options.size || 'auto',
-          format: options.format || 'png',
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -138,7 +153,7 @@ export class FalAiProvider implements PhotoAiProvider {
     }
 
     try {
-      const response = await fetch('https://queue.fal.run/fal-ai/birefnet', {
+      const response = await fetch('https://fal.run/fal-ai/birefnet', {
         method: 'POST',
         headers: {
           Authorization: `Key ${key}`,

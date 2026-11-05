@@ -34,6 +34,12 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch {
+        if (process.env.NODE_ENV === 'production') {
+          return NextResponse.json(
+            { error: 'Database service unavailable. Please try again later.' },
+            { status: 503 }
+          );
+        }
         // Fallback for test/offline environments
         if (userId === 'mock_exhausted_user') {
           user = { id: userId, creditBalance: 0 };

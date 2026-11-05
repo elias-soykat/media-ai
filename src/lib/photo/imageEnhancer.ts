@@ -113,18 +113,10 @@ export function applyEnhancements(
         }
       }
     }
-    return {
-      data: sharpenedData,
-      width,
-      height,
-      colorSpace: imageData.colorSpace,
-    } as ImageData;
+    imageData.data.set(sharpenedData);
+    return imageData;
   }
 
-  return {
-    data: outputData,
-    width,
-    height,
-    colorSpace: imageData.colorSpace,
-  } as ImageData;
+  imageData.data.set(outputData);
+  return imageData;
 }

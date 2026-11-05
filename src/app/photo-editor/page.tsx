@@ -16,7 +16,7 @@ import {
   renderCompositedCanvas,
 } from '@/lib/photo/backgroundCompositor';
 import { Button } from '@/components/ui/button';
-import { Download, RotateCcw, Upload, Image as ImageIcon } from 'lucide-react';
+import { Download, RotateCcw } from 'lucide-react';
 
 export default function PhotoEditorPage() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -25,6 +25,7 @@ export default function PhotoEditorPage() {
   const [fileName, setFileName] = useState<string>('photo.png');
   const [activeTool, setActiveTool] = useState<string>('enhancer');
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
+  const [originalDimensions, setOriginalDimensions] = useState({ width: 1920, height: 1080 });
 
   // Tool states
   const [enhancements, setEnhancements] = useState<EnhancementParams>({
@@ -44,9 +45,10 @@ export default function PhotoEditorPage() {
   const [compressionQuality, setCompressionQuality] = useState<number>(85);
   const [targetFormat, setTargetFormat] = useState<'jpg' | 'png' | 'webp'>('png');
   const [bgOptions, setBgOptions] = useState<{
-    type: 'color' | 'gradient' | 'transparent';
+    type: 'color' | 'gradient' | 'image' | 'transparent';
     color: string;
     gradientId: string;
+    bgImageUrl?: string;
   }>({
     type: 'transparent',
     color: '#FFFFFF',
@@ -54,6 +56,23 @@ export default function PhotoEditorPage() {
   });
 
   const sourceImgRef = useRef<HTMLImageElement | null>(null);
+  const bgImgRef = useRef<HTMLImageElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Pre-load custom background image when bgImageUrl changes
+  useEffect(() => {
+    if (bgOptions.bgImageUrl) {
+      const bgImg = new Image();
+      bgImg.crossOrigin = 'anonymous';
+      bgImg.onload = () => {
+        bgImgRef.current = bgImg;
+        renderPipeline();
+      };
+      bgImg.src = bgOptions.bgImageUrl;
+    } else {
+      bgImgRef.current = null;
+    }
+  }, [bgOptions.bgImageUrl]);
 
   // Handle uploaded image
   const handleFileSelect = (file: File) => {
@@ -65,12 +84,15 @@ export default function PhotoEditorPage() {
       setCutoutImage(null);
 
       const img = new Image();
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         sourceImgRef.current = img;
+        setOriginalDimensions({ width: img.naturalWidth, height: img.naturalHeight });
         setResizeOptions((prev) => ({
           ...prev,
           width: img.naturalWidth,
           height: img.naturalHeight,
+          percentage: 100,
         }));
         renderPipeline(img, dataUrl, null);
       };
@@ -79,8 +101,8 @@ export default function PhotoEditorPage() {
     reader.readAsDataURL(file);
   };
 
-  // Pipeline re-render
-  const renderPipeline = useCallback(
+  // Pipeline execution
+  const executePipeline = useCallback(
     (
       sourceImg: HTMLImageElement | null = sourceImgRef.current,
       sourceUrl: string | null = originalImage,
@@ -89,6 +111,7 @@ export default function PhotoEditorPage() {
       if (!sourceImg || !sourceUrl) return;
 
       const workingImg = new Image();
+      workingImg.crossOrigin = 'anonymous';
       workingImg.onload = () => {
         const sw = workingImg.naturalWidth;
         const sh = workingImg.naturalHeight;
@@ -145,6 +168,7 @@ export default function PhotoEditorPage() {
             bgType: bgOptions.type,
             bgColor: bgOptions.color,
             bgGradient: selectedGrad,
+            bgImage: bgImgRef.current || undefined,
           });
           const mime = formatToMimeType(targetFormat);
           const outputDataUrl = composited.toDataURL(mime, compressionQuality / 100);
@@ -169,6 +193,23 @@ export default function PhotoEditorPage() {
       targetFormat,
       compressionQuality,
     ]
+  );
+
+  // Debounce pipeline calls using requestAnimationFrame to prevent UI thread starvation
+  const renderPipeline = useCallback(
+    (
+      sourceImg: HTMLImageElement | null = sourceImgRef.current,
+      sourceUrl: string | null = originalImage,
+      cutoutUrl: string | null = cutoutImage
+    ) => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      animationFrameRef.current = requestAnimationFrame(() => {
+        executePipeline(sourceImg, sourceUrl, cutoutUrl);
+      });
+    },
+    [executePipeline, originalImage, cutoutImage]
   );
 
   useEffect(() => {
@@ -255,6 +296,7 @@ export default function PhotoEditorPage() {
           aspectRatio={aspectRatio}
           onChangeAspectRatio={setAspectRatio}
           resizeOptions={resizeOptions}
+          originalDimensions={originalDimensions}
           onChangeResize={(opts) => setResizeOptions((p) => ({ ...p, ...opts }))}
           compressionQuality={compressionQuality}
           onChangeQuality={setCompressionQuality}
@@ -329,4 +371,3 @@ export default function PhotoEditorPage() {
     />
   );
 }
-

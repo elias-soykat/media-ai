@@ -19,6 +19,7 @@ describe('Image Enhancer Engine', () => {
 
     const enhanced = applyEnhancements(mockImageData, { brightness: 20 });
     // brightness delta is 20: 100 + 20 = 120
+    expect(enhanced).toBe(mockImageData); // Verifies in-place preservation of ImageData instance
     expect(enhanced.data[0]).toBe(120);
     expect(enhanced.data[1]).toBe(120);
     expect(enhanced.data[2]).toBe(120);

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Wand2,
   Crop,
@@ -11,10 +11,12 @@ import {
   RefreshCw,
   Sparkles,
   Loader2,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EnhancementParams, ENHANCEMENT_PRESETS } from '@/lib/photo/imageEnhancer';
 import { BACKGROUND_PRESETS } from '@/lib/photo/backgroundCompositor';
+import { estimateCompressedSize, formatFileSize } from '@/lib/photo/imageTransforms';
 
 export interface PhotoTool {
   id: 'bg-remover' | 'bg-changer' | 'enhancer' | 'cropper' | 'resizer' | 'compressor' | 'converter';
@@ -33,7 +35,7 @@ export const PHOTO_TOOLS: PhotoTool[] = [
   {
     id: 'bg-changer',
     label: 'Background Changer',
-    description: 'Replace background with colors or gradients',
+    description: 'Replace background with colors, gradients, or custom image',
   },
   {
     id: 'enhancer',
@@ -79,6 +81,7 @@ export interface PhotoSidebarControlsProps {
     percentage: number;
     maintainAspectRatio: boolean;
   };
+  originalDimensions?: { width: number; height: number };
   onChangeResize: (options: Partial<{
     width: number;
     height: number;
@@ -93,14 +96,16 @@ export interface PhotoSidebarControlsProps {
   onChangeFormat: (format: 'jpg' | 'png' | 'webp') => void;
   // Background Changer props
   bgOptions: {
-    type: 'color' | 'gradient' | 'transparent';
+    type: 'color' | 'gradient' | 'image' | 'transparent';
     color: string;
     gradientId: string;
+    bgImageUrl?: string;
   };
   onChangeBgOptions: (options: Partial<{
-    type: 'color' | 'gradient' | 'transparent';
+    type: 'color' | 'gradient' | 'image' | 'transparent';
     color: string;
     gradientId: string;
+    bgImageUrl?: string;
   }>) => void;
   // AI props
   onTriggerAiRemoveBg?: () => void;
@@ -117,6 +122,7 @@ export function PhotoSidebarControls({
   aspectRatio,
   onChangeAspectRatio,
   resizeOptions,
+  originalDimensions = { width: 1920, height: 1080 },
   onChangeResize,
   compressionQuality,
   onChangeQuality,
@@ -128,6 +134,57 @@ export function PhotoSidebarControls({
   isAiLoading = false,
   hasLoadedImage = false,
 }: PhotoSidebarControlsProps) {
+  const bgFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Estimated file size calculation
+  const currentW = resizeOptions.width || originalDimensions.width;
+  const currentH = resizeOptions.height || originalDimensions.height;
+  const estimatedBytes = estimateCompressedSize(
+    currentW,
+    currentH,
+    targetFormat,
+    compressionQuality
+  );
+  const estimatedSizeLabel = formatFileSize(estimatedBytes);
+
+  const handleCustomBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const url = event.target?.result as string;
+        onChangeBgOptions({ type: 'image', bgImageUrl: url });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleWidthChange = (newWidth: number) => {
+    if (resizeOptions.maintainAspectRatio && originalDimensions.width > 0) {
+      const ratio = originalDimensions.height / originalDimensions.width;
+      const newHeight = Math.round(newWidth * ratio);
+      onChangeResize({ width: newWidth, height: newHeight });
+    } else {
+      onChangeResize({ width: newWidth });
+    }
+  };
+
+  const handleHeightChange = (newHeight: number) => {
+    if (resizeOptions.maintainAspectRatio && originalDimensions.height > 0) {
+      const ratio = originalDimensions.width / originalDimensions.height;
+      const newWidth = Math.round(newHeight * ratio);
+      onChangeResize({ width: newWidth, height: newHeight });
+    } else {
+      onChangeResize({ height: newHeight });
+    }
+  };
+
+  const handlePercentageChange = (pct: number) => {
+    const newWidth = Math.round((originalDimensions.width * pct) / 100);
+    const newHeight = Math.round((originalDimensions.height * pct) / 100);
+    onChangeResize({ width: newWidth, height: newHeight, percentage: pct });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Tool Selector Grid */}
@@ -223,16 +280,16 @@ export function PhotoSidebarControls({
             <div>
               <h3 className="text-sm font-semibold">Background Changer</h3>
               <p className="text-xs text-zinc-500 mt-1">
-                Apply solid colors, studio gradients, or keep transparent.
+                Apply solid colors, studio gradients, custom image, or keep transparent.
               </p>
             </div>
 
-            <div className="flex rounded-lg bg-zinc-100 dark:bg-zinc-800 p-1 text-xs">
-              {(['transparent', 'color', 'gradient'] as const).map((type) => (
+            <div className="grid grid-cols-4 gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 p-1 text-[11px]">
+              {(['transparent', 'color', 'gradient', 'image'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => onChangeBgOptions({ type })}
-                  className={`flex-1 py-1.5 rounded-md font-medium capitalize transition-all ${
+                  className={`py-1.5 rounded-md font-medium capitalize text-center transition-all ${
                     bgOptions.type === type
                       ? 'bg-background shadow-sm text-foreground'
                       : 'text-zinc-500 hover:text-foreground'
@@ -304,6 +361,39 @@ export function PhotoSidebarControls({
                 </div>
               </div>
             )}
+
+            {bgOptions.type === 'image' && (
+              <div className="space-y-3">
+                <label className="text-xs font-medium">Custom Background Image</label>
+                <input
+                  ref={bgFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCustomBgUpload}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  className="w-full text-xs"
+                  onClick={() => bgFileInputRef.current?.click()}
+                >
+                  <Upload className="w-3.5 h-3.5 mr-2" />
+                  Choose Background Image...
+                </Button>
+                {bgOptions.bgImageUrl && (
+                  <div className="flex items-center gap-2 p-2 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-border">
+                    <img
+                      src={bgOptions.bgImageUrl}
+                      alt="Custom BG"
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                    <span className="text-xs text-zinc-500 truncate flex-1">
+                      Custom background loaded
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -338,7 +428,7 @@ export function PhotoSidebarControls({
                 { key: 'contrast', label: 'Contrast', min: -100, max: 100 },
                 { key: 'exposure', label: 'Exposure', min: -100, max: 100 },
                 { key: 'saturation', label: 'Saturation', min: -100, max: 100 },
-                { key: 'sharpness', label: 'Sharpness', min: -100, max: 100 },
+                { key: 'sharpness', label: 'Sharpness', min: 0, max: 100 },
               ].map((item) => (
                 <div key={item.key} className="space-y-1">
                   <div className="flex justify-between text-xs font-medium">
@@ -396,13 +486,31 @@ export function PhotoSidebarControls({
               <p className="text-xs text-zinc-500 mt-1">Scale by pixels or percentage.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            {/* Percentage Scale Slider */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs font-medium">
+                <span>Scale Percentage</span>
+                <span className="font-mono text-primary font-bold">
+                  {resizeOptions.percentage || 100}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="10"
+                max="200"
+                value={resizeOptions.percentage || 100}
+                onChange={(e) => handlePercentageChange(Number(e.target.value))}
+                className="w-full accent-primary h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg cursor-pointer"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <div className="space-y-1">
                 <label className="text-xs font-medium">Width (px)</label>
                 <input
                   type="number"
                   value={resizeOptions.width || ''}
-                  onChange={(e) => onChangeResize({ width: Number(e.target.value) })}
+                  onChange={(e) => handleWidthChange(Number(e.target.value))}
                   className="w-full text-xs px-2.5 py-1.5 border border-border rounded-lg bg-background"
                 />
               </div>
@@ -411,7 +519,7 @@ export function PhotoSidebarControls({
                 <input
                   type="number"
                   value={resizeOptions.height || ''}
-                  onChange={(e) => onChangeResize({ height: Number(e.target.value) })}
+                  onChange={(e) => handleHeightChange(Number(e.target.value))}
                   className="w-full text-xs px-2.5 py-1.5 border border-border rounded-lg bg-background"
                 />
               </div>
@@ -452,6 +560,11 @@ export function PhotoSidebarControls({
                 onChange={(e) => onChangeQuality(Number(e.target.value))}
                 className="w-full accent-primary h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg cursor-pointer"
               />
+            </div>
+
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-border flex justify-between items-center text-xs">
+              <span className="text-zinc-500">Estimated Output Size:</span>
+              <span className="font-mono font-bold text-primary">{estimatedSizeLabel}</span>
             </div>
           </div>
         )}
