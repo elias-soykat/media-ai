@@ -6,6 +6,8 @@ export interface EnhancementAdjustments {
   sharpness?: number; // 0 to 100
 }
 
+export type EnhancementParams = EnhancementAdjustments;
+
 export const ENHANCEMENT_PRESETS: Record<string, Required<EnhancementAdjustments>> = {
   original: { brightness: 0, contrast: 0, saturation: 0, exposure: 0, sharpness: 0 },
   vivid: { brightness: 5, contrast: 15, saturation: 25, exposure: 5, sharpness: 10 },
