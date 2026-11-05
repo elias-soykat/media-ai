@@ -1,0 +1,80 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ToolType {
+  PHOTO_BG_REMOVER
+  PHOTO_BG_CHANGER
+  PHOTO_ENHANCER
+  PHOTO_CROPPER
+  PHOTO_RESIZER
+  PHOTO_COMPRESSOR
+  PHOTO_CONVERTER
+  VIDEO_TRIMMER
+  VIDEO_COMPRESSOR
+  VIDEO_RESIZER
+  VIDEO_CONVERTER
+  AUDIO_NOISE_REMOVER
+}
+
+model User {
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  passwordHash       String
+  creditBalance      Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  jobs               Job[]
+  creditTransactions CreditTransaction[]
+}
+
+model Job {
+  id           String    @id @default(cuid())
+  userId       String?
+  toolType     ToolType
+  status       JobStatus @default(PENDING)
+  inputUrl     String?
+  outputUrl    String?
+  metadata     Json?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  expiresAt    DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model SystemConstraint {
+  key         String   @id
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model CreditTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
