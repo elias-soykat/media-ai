@@ -25,35 +25,24 @@ export async function POST(req: NextRequest) {
     const normalizedEmail = email.trim().toLowerCase();
     const { combined } = hashPassword(password);
 
-    let createdUser = null;
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
 
-    try {
-      const existingUser = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
-      });
-
-      if (existingUser) {
-        return NextResponse.json(
-          { error: 'An account with this email already exists' },
-          { status: 409 }
-        );
-      }
-
-      createdUser = await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          passwordHash: combined,
-          creditBalance: APP_CONSTRAINTS.billing.initialFreeCredits,
-        },
-      });
-    } catch {
-      // Mock user fallback for database-less test environments
-      createdUser = {
-        id: `usr_${Date.now()}`,
-        email: normalizedEmail,
-        creditBalance: APP_CONSTRAINTS.billing.initialFreeCredits,
-      };
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists' },
+        { status: 409 }
+      );
     }
+
+    const createdUser = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        passwordHash: combined,
+        creditBalance: APP_CONSTRAINTS.billing.initialFreeCredits,
+      },
+    });
 
     const token = generateSessionToken(createdUser.id);
 
@@ -83,4 +72,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

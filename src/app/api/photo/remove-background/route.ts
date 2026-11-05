@@ -99,19 +99,20 @@ export async function POST(req: NextRequest) {
 
         if (!eligibility.isFreeTrial) {
           const cost = APP_CONSTRAINTS.billing.costs.photoBackgroundRemoval;
-          const updatedUser = await prisma.user.update({
-            where: { id: user.id },
-            data: { creditBalance: { decrement: cost } },
-          });
+          const [updatedUser] = await prisma.$transaction([
+            prisma.user.update({
+              where: { id: user.id },
+              data: { creditBalance: { decrement: cost } },
+            }),
+            prisma.creditTransaction.create({
+              data: {
+                userId: user.id,
+                amount: -cost,
+                reason: 'AI Background Removal',
+              },
+            }),
+          ]);
           remainingCredits = updatedUser.creditBalance;
-
-          await prisma.creditTransaction.create({
-            data: {
-              userId: user.id,
-              amount: -cost,
-              reason: 'AI Background Removal',
-            },
-          });
         }
       }
     } catch {

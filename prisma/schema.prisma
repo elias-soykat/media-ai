@@ -68,11 +68,12 @@ model SystemConstraint {
 }
 
 model CreditTransaction {
-  id        String   @id @default(cuid())
-  userId    String
-  amount    Int
-  reason    String
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  reason      String
+  paddleTxnId String?  @unique
+  createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

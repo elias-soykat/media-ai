@@ -1,7 +1,12 @@
 import crypto from 'crypto';
 
-const SESSION_SECRET =
-  process.env.SESSION_SECRET || 'mock_session_secret_change_in_production_key';
+function getSessionSecret(): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('CRITICAL: SESSION_SECRET is not configured in production');
+  }
+  return secret || 'mock_session_secret_change_in_production_key';
+}
 
 /**
  * Hashes a plaintext password using standard PBKDF2 with a cryptographic salt.
@@ -70,8 +75,9 @@ export function generateSessionToken(
     exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
   };
   const payloadStr = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const secret = getSessionSecret();
   const signature = crypto
-    .createHmac('sha256', SESSION_SECRET)
+    .createHmac('sha256', secret)
     .update(payloadStr)
     .digest('base64url');
 
@@ -95,8 +101,9 @@ export function verifySessionToken(
   }
 
   const [payloadStr, signature] = parts;
+  const secret = getSessionSecret();
   const expectedSig = crypto
-    .createHmac('sha256', SESSION_SECRET)
+    .createHmac('sha256', secret)
     .update(payloadStr)
     .digest('base64url');
 

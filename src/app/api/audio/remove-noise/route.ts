@@ -115,19 +115,20 @@ export async function POST(req: NextRequest) {
         });
 
         if (!eligibility.isFreeTrial) {
-          const updatedUser = await prisma.user.update({
-            where: { id: user.id },
-            data: { creditBalance: { decrement: costCredits } },
-          });
+          const [updatedUser] = await prisma.$transaction([
+            prisma.user.update({
+              where: { id: user.id },
+              data: { creditBalance: { decrement: costCredits } },
+            }),
+            prisma.creditTransaction.create({
+              data: {
+                userId: user.id,
+                amount: -costCredits,
+                reason: 'AI Audio Noise Removal',
+              },
+            }),
+          ]);
           remainingCredits = updatedUser.creditBalance;
-
-          await prisma.creditTransaction.create({
-            data: {
-              userId: user.id,
-              amount: -costCredits,
-              reason: 'AI Audio Noise Removal',
-            },
-          });
         }
       }
     } catch {

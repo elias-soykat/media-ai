@@ -15,23 +15,9 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    let user = null;
-
-    try {
-      user = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
-      });
-    } catch {
-      // Mock user fallback for database-less test environments
-      if (email === 'demo@example.com' && password === 'ValidPassword123!') {
-        user = {
-          id: 'mock_demo_user',
-          email: 'demo@example.com',
-          passwordHash: 'dummy:hash',
-          creditBalance: 10,
-        };
-      }
-    }
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -40,15 +26,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify password unless it's the mock test user
-    if (user.id !== 'mock_demo_user') {
-      const isValid = verifyPassword(password, user.passwordHash);
-      if (!isValid) {
-        return NextResponse.json(
-          { error: 'Invalid email or password' },
-          { status: 401 }
-        );
-      }
+    const isValid = verifyPassword(password, user.passwordHash);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      );
     }
 
     const token = generateSessionToken(user.id);
@@ -79,4 +62,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

@@ -32,6 +32,13 @@ export default function PricingPage() {
       });
 
       const data = await res.json();
+
+      if (res.status === 401) {
+        // Redirect to login if user is not authenticated
+        window.location.href = '/account/login?redirect=/pricing';
+        return;
+      }
+
       if (!res.ok || !data.checkoutUrl) {
         throw new Error(data.error || 'Failed to initiate checkout');
       }

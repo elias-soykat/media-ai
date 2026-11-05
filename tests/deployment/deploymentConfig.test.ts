@@ -11,6 +11,12 @@ describe('Production Deployment Scaffolding', () => {
     const compose = fs.readFileSync(path.join(process.cwd(), 'docker-compose.yml'), 'utf-8');
     expect(compose).toContain('services:');
     expect(compose).toContain('postgres:');
+    expect(compose).toContain('healthcheck:');
+  });
+
+  it('should include public directory and Prisma migrations for deployment', () => {
+    expect(fs.existsSync(path.join(process.cwd(), 'public'))).toBe(true);
+    expect(fs.existsSync(path.join(process.cwd(), 'prisma/migrations/20261105000000_init/migration.sql'))).toBe(true);
   });
 
   it('should provide Caddyfile with reverse proxy to Next.js app', () => {

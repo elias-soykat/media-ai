@@ -22,26 +22,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    let user = null;
-    try {
-      user = await prisma.user.findUnique({
-        where: { id: session.userId },
-        select: {
-          id: true,
-          email: true,
-          creditBalance: true,
-          createdAt: true,
-        },
-      });
-    } catch {
-      // Offline fallback for testing
-      user = {
-        id: session.userId,
-        email: 'user@example.com',
-        creditBalance: 1,
-        createdAt: new Date(),
-      };
-    }
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        id: true,
+        email: true,
+        creditBalance: true,
+        createdAt: true,
+      },
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -57,9 +46,10 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Session verification failed';
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { authenticated: false, user: null },
+      { status: 200 }
+    );
   }
 }
-

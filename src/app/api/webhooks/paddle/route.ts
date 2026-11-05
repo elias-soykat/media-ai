@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyPaddleWebhookSignature } from '@/lib/billing/paddleWebhookValidator';
 import { prisma } from '@/lib/prisma';
 
+const MAX_WEBHOOK_TOLERANCE_SECONDS = 300; // 5 minutes tolerance to reject replay attacks
+
 export async function POST(req: NextRequest) {
   try {
     const signatureHeader =
@@ -10,18 +12,30 @@ export async function POST(req: NextRequest) {
       '';
 
     const rawBody = await req.text();
-    const secret =
-      process.env.PADDLE_WEBHOOK_SECRET || 'mock_paddle_webhook_secret';
+    const configuredSecret = process.env.PADDLE_WEBHOOK_SECRET;
+
+    if (!configuredSecret && process.env.NODE_ENV === 'production') {
+      console.error(
+        'CRITICAL: PADDLE_WEBHOOK_SECRET environment variable is missing in production.'
+      );
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const secret = configuredSecret || 'mock_paddle_webhook_secret';
 
     const isValid = verifyPaddleWebhookSignature(
       rawBody,
       signatureHeader,
-      secret
+      secret,
+      MAX_WEBHOOK_TOLERANCE_SECONDS
     );
 
     if (!isValid) {
       return NextResponse.json(
-        { error: 'Invalid webhook signature' },
+        { error: 'Invalid webhook signature or expired timestamp' },
         { status: 401 }
       );
     }
@@ -78,12 +92,9 @@ export async function POST(req: NextRequest) {
 
     // Authoritative idempotency check & atomic balance credit
     try {
-      const existingTxn = await prisma.creditTransaction.findFirst({
-        where: {
-          reason: {
-            contains: txnId,
-          },
-        },
+      // 1. Check if this transaction was already credited using unique paddleTxnId
+      const existingTxn = await prisma.creditTransaction.findUnique({
+        where: { paddleTxnId: txnId },
       });
 
       if (existingTxn) {
@@ -96,47 +107,69 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Check if user exists
+      // 2. Look up the recipient user
       const user = await prisma.user.findUnique({
         where: { id: userId },
       });
 
-      if (user) {
-        await prisma.$transaction([
-          prisma.user.update({
-            where: { id: userId },
-            data: {
-              creditBalance: {
-                increment: credits,
-              },
-            },
-          }),
-          prisma.creditTransaction.create({
-            data: {
-              userId,
-              amount: credits,
-              reason: `Paddle purchase: ${txnId} (${packId})`,
-            },
-          }),
-        ]);
+      if (!user) {
+        // Fail so webhook can be retried or investigated
+        return NextResponse.json(
+          { error: `User not found: ${userId}` },
+          { status: 404 }
+        );
       }
-    } catch {
-      // Offline/mock database fallback for testing environments
-    }
 
-    return NextResponse.json(
-      {
-        status: 'success',
-        credited: credits,
-        transactionId: txnId,
-        userId,
-      },
-      { status: 200 }
-    );
+      // 3. Atomically increment user credit balance and record credit transaction
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: userId },
+          data: {
+            creditBalance: {
+              increment: credits,
+            },
+          },
+        }),
+        prisma.creditTransaction.create({
+          data: {
+            userId,
+            amount: credits,
+            reason: `Paddle purchase: ${txnId} (${packId})`,
+            paddleTxnId: txnId,
+          },
+        }),
+      ]);
+
+      return NextResponse.json(
+        {
+          status: 'success',
+          credited: credits,
+          transactionId: txnId,
+          userId,
+        },
+        { status: 200 }
+      );
+    } catch (dbErr: any) {
+      // Handle concurrent race condition gracefully if unique constraint is triggered
+      if (dbErr?.code === 'P2002') {
+        return NextResponse.json(
+          {
+            status: 'already_processed',
+            message: 'Transaction already credited concurrently',
+          },
+          { status: 200 }
+        );
+      }
+
+      console.error('Failed to credit Paddle transaction in database:', dbErr);
+      return NextResponse.json(
+        { error: 'Database credit fulfillment failed. Request retry.' },
+        { status: 500 }
+      );
+    }
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : 'Webhook processing error';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

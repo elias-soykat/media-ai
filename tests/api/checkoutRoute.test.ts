@@ -34,5 +34,19 @@ describe('POST /api/billing/checkout Route', () => {
     expect(json.transactionId).toBeDefined();
     expect(json.pack.credits).toBe(200);
   });
+
+  it('should return 401 if user is not authenticated', async () => {
+    const req = new NextRequest('http://localhost:3000/api/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        packId: 'pro',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json.error).toMatch(/Authentication required/i);
+  });
 });
 

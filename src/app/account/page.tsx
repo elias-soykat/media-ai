@@ -24,19 +24,33 @@ interface UserSession {
   createdAt?: string;
 }
 
+interface CreditTransactionItem {
+  id: string;
+  amount: number;
+  reason: string;
+  createdAt: string;
+}
+
 export default function AccountDashboardPage() {
   const router = useRouter();
   const [session, setSession] = useState<UserSession | null>(null);
+  const [transactions, setTransactions] = useState<CreditTransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    async function loadSession() {
+    async function loadData() {
       try {
         const res = await fetch('/api/auth/session');
         const data = await res.json();
         if (data.authenticated && data.user) {
           setSession(data.user);
+          // Load transactions
+          const txRes = await fetch('/api/account/transactions');
+          if (txRes.ok) {
+            const txData = await txRes.json();
+            setTransactions(txData.transactions || []);
+          }
         } else {
           setSession(null);
         }
@@ -46,7 +60,7 @@ export default function AccountDashboardPage() {
         setLoading(false);
       }
     }
-    loadSession();
+    loadData();
   }, []);
 
   const handleLogout = async () => {
@@ -224,13 +238,46 @@ export default function AccountDashboardPage() {
         </div>
 
         <div className="border border-zinc-100 dark:border-zinc-800 rounded-xl overflow-hidden">
-          <div className="p-8 text-center text-zinc-500 text-sm space-y-2">
-            <CheckCircle className="w-8 h-8 text-zinc-400 mx-auto" />
-            <p className="font-medium text-foreground">Account Active</p>
-            <p className="text-xs text-zinc-400">
-              When you purchase credit packages or process jobs, your transactions will appear here with instant audit verification.
-            </p>
-          </div>
+          {transactions.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-xs text-zinc-500 uppercase border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Description</th>
+                    <th className="px-4 py-3 text-right">Credits</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {transactions.map((tx) => (
+                    <tr key={tx.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
+                      <td className="px-4 py-3 text-xs text-zinc-500 whitespace-nowrap">
+                        {new Date(tx.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        {tx.reason}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-right font-bold whitespace-nowrap ${
+                          tx.amount > 0 ? 'text-emerald-600' : 'text-zinc-600 dark:text-zinc-400'
+                        }`}
+                      >
+                        {tx.amount > 0 ? `+${tx.amount}` : tx.amount}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-8 text-center text-zinc-500 text-sm space-y-2">
+              <CheckCircle className="w-8 h-8 text-zinc-400 mx-auto" />
+              <p className="font-medium text-foreground">Account Active</p>
+              <p className="text-xs text-zinc-400">
+                When you purchase credit packages or process jobs, your transactions will appear here with instant audit verification.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
