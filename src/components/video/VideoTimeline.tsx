@@ -162,3 +162,4 @@ export function VideoTimeline({
     </div>
   );
 }
+

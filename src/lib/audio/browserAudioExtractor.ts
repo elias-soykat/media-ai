@@ -82,3 +82,5 @@ export async function extractAudioSnippet(
   return encodeWav(channelData, targetSampleRate);
 }
 
+export const extractAudioFromVideo = extractAudioSnippet;
+

@@ -42,3 +42,4 @@ describe('POST /api/audio/remove-noise', () => {
     expect(json.isFreeTrial).toBe(true);
   });
 });
+

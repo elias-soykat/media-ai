@@ -42,3 +42,4 @@ describe('Video Transforms Engine', () => {
     expect(SUPPORTED_VIDEO_PRESETS).toHaveProperty('4:5');
   });
 });
+

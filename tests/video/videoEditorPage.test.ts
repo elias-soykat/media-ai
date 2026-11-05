@@ -12,3 +12,4 @@ describe('Video Editor Workspace Tools', () => {
     expect(ids).toContain('noise-remover');
   });
 });
+

@@ -412,3 +412,4 @@ export function VideoSidebarControls({
     </div>
   );
 }
+

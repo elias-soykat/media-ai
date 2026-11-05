@@ -35,3 +35,4 @@ describe('Video Trimmer Engine', () => {
     expect(calculateTrimmedDuration(10.5, 25.2)).toBeCloseTo(14.7, 2);
   });
 });
+

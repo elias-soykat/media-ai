@@ -16,3 +16,4 @@ describe('Video Timeline Component Logic', () => {
     expect(endPct).toBe(100);
   });
 });
+

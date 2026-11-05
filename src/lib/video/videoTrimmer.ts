@@ -98,3 +98,4 @@ export function validateTrimRange(
 export function calculateTrimmedDuration(startTime: number, endTime: number): number {
   return Math.max(0, endTime - startTime);
 }
+
