@@ -1,0 +1,23 @@
+# Caddyfile for Single VPS Deployment
+# Replace with your production domain (e.g., editor.yourdomain.com) or :80 for local testing
+{$APP_DOMAIN:localhost} {
+    encode gzip zstd
+
+    # Security & WebAssembly Isolation Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Cross-Origin-Opener-Policy "same-origin"
+        Cross-Origin-Embedder-Policy "credentialless"
+    }
+
+    # Reverse proxy to the standalone Next.js server container
+    reverse_proxy app:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
