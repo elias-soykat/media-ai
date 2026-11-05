@@ -105,3 +105,4 @@ export function VideoPreview({ videoUrl, onTimeUpdate, onDurationChange }: Video
     </div>
   );
 }
+

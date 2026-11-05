@@ -125,3 +125,4 @@ export function useMediaValidator(mediaType: 'photo' | 'video' | 'audio') {
 
   return { constraints, loading, validate, inspectVideoMetadata };
 }
+

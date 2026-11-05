@@ -12,3 +12,4 @@ describe('Navigation Items Configuration', () => {
     expect(titles).toContain('Pricing');
   });
 });
+

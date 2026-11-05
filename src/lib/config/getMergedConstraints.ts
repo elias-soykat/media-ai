@@ -28,3 +28,4 @@ export async function getMergedConstraints(): Promise<AppConstraints> {
     return APP_CONSTRAINTS;
   }
 }
+

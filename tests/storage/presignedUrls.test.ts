@@ -7,3 +7,4 @@ describe('R2 Storage Key Generation', () => {
     expect(key).toMatch(/^temp\/user_123\/photo_bg_remover\/[a-zA-Z0-9_-]+\.png$/);
   });
 });
+

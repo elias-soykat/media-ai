@@ -20,3 +20,4 @@ describe('APP_CONSTRAINTS Configuration', () => {
     expect(APP_CONSTRAINTS.billing.initialFreeCredits).toBe(1);
   });
 });
+

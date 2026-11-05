@@ -35,3 +35,4 @@ describe('Authoritative Media Validator', () => {
     expect(result.errors).toContain('Video duration exceeds maximum limit of 180 seconds');
   });
 });
+

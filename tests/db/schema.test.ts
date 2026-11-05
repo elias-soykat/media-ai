@@ -6,3 +6,4 @@ describe('Prisma Database Schema Definitions', () => {
     expect(prisma).toBeDefined();
   });
 });
+

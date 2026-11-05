@@ -130,3 +130,4 @@ export function CanvasPreview({ originalImage, processedImage, alt = 'Media Prev
     </div>
   );
 }
+

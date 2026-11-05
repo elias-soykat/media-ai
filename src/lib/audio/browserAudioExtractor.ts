@@ -81,3 +81,4 @@ export async function extractAudioSnippet(
   const channelData = renderedBuffer.getChannelData(0);
   return encodeWav(channelData, targetSampleRate);
 }
+

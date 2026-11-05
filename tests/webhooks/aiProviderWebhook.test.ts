@@ -26,3 +26,4 @@ describe('AI Provider Webhook Parser', () => {
     expect(parsed.errorMessage).toBe('Subject segmentation ambiguous');
   });
 });
+
