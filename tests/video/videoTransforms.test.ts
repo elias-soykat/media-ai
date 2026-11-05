@@ -16,6 +16,11 @@ describe('Video Transforms Engine', () => {
     expect(rect.width).toBe(608);
     expect(rect.x).toBe(Math.round((1920 - 608) / 2));
     expect(rect.y).toBe(0);
+
+    // Enforce even dimension parity on odd-producing resolutions (e.g. 720 * 9/16 = 405 -> 406)
+    const oddSourceRect = calculateVideoCropRect(1280, 720, '9:16');
+    expect(oddSourceRect.width % 2).toBe(0);
+    expect(oddSourceRect.height % 2).toBe(0);
   });
 
   it('should scale 1080p video down to 720p and 480p maintaining aspect ratio', () => {

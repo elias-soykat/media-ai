@@ -75,15 +75,25 @@ export class ElevenLabsAudioProvider implements AudioAiProvider {
     }
 
     try {
+      const formData = new FormData();
+
+      if (options.audioUrl.startsWith('data:')) {
+        const base64Data = options.audioUrl.replace(/^data:audio\/[a-zA-Z0-9+.-]+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        formData.append('audio', blob, 'audio.wav');
+      } else {
+        const remoteRes = await fetch(options.audioUrl);
+        const blob = await remoteRes.blob();
+        formData.append('audio', blob, 'audio.wav');
+      }
+
       const response = await fetch('https://api.elevenlabs.io/v1/audio-isolation', {
         method: 'POST',
         headers: {
           'xi-api-key': key,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          audio_url: options.audioUrl,
-        }),
+        body: formData,
       });
 
       if (!response.ok) {

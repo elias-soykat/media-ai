@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { Play, Pause, RotateCcw, Scissors } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Play, Pause, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatTimestamp } from '@/lib/video/videoTrimmer';
 
@@ -40,13 +40,13 @@ export function VideoTimeline({
   onTogglePlay,
 }: VideoTimelineProps) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [activeDrag, setActiveDrag] = useState<'start' | 'end' | 'playhead' | null>(null);
 
   const { startPct, endPct } = calculateHandlePositions(startTime, endTime, duration);
   const playheadPct = duration > 0 ? (currentTime / duration) * 100 : 0;
   const trimmedDuration = Math.max(0, endTime - startTime);
 
   const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only seek if clicking outside the dragging handle thumbs
     if (!trackRef.current || duration <= 0) return;
     const rect = trackRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -56,14 +56,14 @@ export function VideoTimeline({
 
   const handleStartHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStart = Number(e.target.value);
-    if (newStart < endTime - 0.5) {
+    if (newStart <= endTime - 0.5) {
       onTrimChange(newStart, endTime);
     }
   };
 
   const handleEndHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEnd = Number(e.target.value);
-    if (newEnd > startTime + 0.5) {
+    if (newEnd >= startTime + 0.5) {
       onTrimChange(startTime, newEnd);
     }
   };
@@ -136,30 +136,57 @@ export function VideoTimeline({
           <div className="w-2.5 h-2.5 -ml-1 bg-red-500 rounded-full shadow" />
         </div>
 
-        {/* Draggable Trim Handles */}
-        <input
-          type="range"
-          min={0}
-          max={duration || 100}
-          step={0.1}
-          value={startTime}
-          onChange={handleStartHandleChange}
-          className="absolute inset-0 opacity-0 cursor-ew-resize z-20 pointer-events-auto"
-          title="Adjust trim start point"
-        />
+        {/* Left Handle Visual Indicator */}
+        <div
+          className="absolute top-0 bottom-0 w-3 bg-primary rounded-l z-20 pointer-events-none flex items-center justify-center -ml-1.5"
+          style={{ left: `${startPct}%` }}
+        >
+          <div className="w-0.5 h-4 bg-white rounded-full opacity-80" />
+        </div>
 
-        <input
-          type="range"
-          min={0}
-          max={duration || 100}
-          step={0.1}
-          value={endTime}
-          onChange={handleEndHandleChange}
-          className="absolute inset-0 opacity-0 cursor-ew-resize z-20 pointer-events-auto"
-          title="Adjust trim end point"
-        />
+        {/* Right Handle Visual Indicator */}
+        <div
+          className="absolute top-0 bottom-0 w-3 bg-primary rounded-r z-20 pointer-events-none flex items-center justify-center -mr-1.5"
+          style={{ left: `${endPct}%` }}
+        >
+          <div className="w-0.5 h-4 bg-white rounded-full opacity-80" />
+        </div>
+      </div>
+
+      {/* Discrete Trim Scrubber Sliders Below Track */}
+      <div className="grid grid-cols-2 gap-4 pt-1">
+        <div className="space-y-1">
+          <div className="flex justify-between text-[11px] text-zinc-500">
+            <span>Trim Start</span>
+            <span className="font-mono text-foreground font-semibold">{formatTimestamp(startTime)}</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={duration || 100}
+            step={0.1}
+            value={startTime}
+            onChange={handleStartHandleChange}
+            className="w-full accent-primary h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg cursor-ew-resize"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex justify-between text-[11px] text-zinc-500">
+            <span>Trim End</span>
+            <span className="font-mono text-foreground font-semibold">{formatTimestamp(endTime)}</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={duration || 100}
+            step={0.1}
+            value={endTime}
+            onChange={handleEndHandleChange}
+            className="w-full accent-primary h-1 bg-zinc-200 dark:bg-zinc-700 rounded-lg cursor-ew-resize"
+          />
+        </div>
       </div>
     </div>
   );
 }
-

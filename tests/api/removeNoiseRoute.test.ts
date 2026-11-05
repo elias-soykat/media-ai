@@ -41,5 +41,21 @@ describe('POST /api/audio/remove-noise', () => {
     expect(json.outputAudioUrl).toBeDefined();
     expect(json.isFreeTrial).toBe(true);
   });
+
+  it('should return 502 without deducting credits if AI provider returns an error', async () => {
+    const req = new NextRequest('http://localhost:3000/api/audio/remove-noise', {
+      method: 'POST',
+      body: JSON.stringify({
+        audioUrl: 'https://r2.domain.com/temp/audio.wav',
+        userId: 'new_video_user_1',
+        durationSeconds: 30,
+        providerName: 'elevenlabs', // unconfigured in test environment
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(502);
+    const json = await res.json();
+    expect(json.error).toMatch(/API key not configured/);
+  });
 });
 

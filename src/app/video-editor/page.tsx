@@ -7,14 +7,17 @@ import { VideoTimeline } from '@/components/video/VideoTimeline';
 import { MediaDropzone } from '@/components/upload/MediaDropzone';
 import { VideoSidebarControls, VIDEO_TOOLS } from '@/components/video/VideoSidebarControls';
 import { extractAudioFromVideo } from '@/lib/audio/browserAudioExtractor';
+import { validateTrimRange } from '@/lib/video/videoTrimmer';
+import { createRemuxedStream } from '@/lib/video/audioRemuxer';
 import { Button } from '@/components/ui/button';
-import { Download, RotateCcw } from 'lucide-react';
+import { Download, RotateCcw, Loader2 } from 'lucide-react';
 
 export default function VideoEditorPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>('video.mp4');
   const [activeTool, setActiveTool] = useState<string>('trimmer');
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   // Playback & Timing state
   const [duration, setDuration] = useState<number>(0);
@@ -33,12 +36,28 @@ export default function VideoEditorPage() {
   const [isComparingAudio, setIsComparingAudio] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const originalFileRef = useRef<File | null>(null);
+  const previousUrlRef = useRef<string | null>(null);
+
+  // Clean up object URLs on replacement or unmount to prevent browser heap memory leaks
+  useEffect(() => {
+    return () => {
+      if (previousUrlRef.current) {
+        URL.revokeObjectURL(previousUrlRef.current);
+      }
+    };
+  }, []);
 
   const handleFileSelect = (file: File) => {
+    if (previousUrlRef.current) {
+      URL.revokeObjectURL(previousUrlRef.current);
+    }
+
     originalFileRef.current = file;
     setFileName(file.name);
     const url = URL.createObjectURL(file);
+    previousUrlRef.current = url;
     setVideoUrl(url);
     setCleanedAudioUrl(null);
     setCurrentTime(0);
@@ -52,11 +71,18 @@ export default function VideoEditorPage() {
 
   const handleTimeUpdate = (t: number) => {
     setCurrentTime(t);
+
+    // Keep cleaned audio element synchronized with video playback
+    if (audioRef.current && Math.abs(audioRef.current.currentTime - t) > 0.15) {
+      audioRef.current.currentTime = t;
+    }
+
     // Auto-loop or clamp playback within trim boundaries
     if (endTime > 0 && t >= endTime && isPlaying) {
       if (videoRef.current) {
         videoRef.current.currentTime = startTime;
         setCurrentTime(startTime);
+        if (audioRef.current) audioRef.current.currentTime = startTime;
       }
     }
   };
@@ -66,22 +92,52 @@ export default function VideoEditorPage() {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
     }
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
   };
 
   const handleTogglePlay = () => {
     if (!videoRef.current) return;
     if (isPlaying) {
       videoRef.current.pause();
+      audioRef.current?.pause();
       setIsPlaying(false);
     } else {
       if (currentTime < startTime || currentTime >= endTime) {
         videoRef.current.currentTime = startTime;
+        if (audioRef.current) audioRef.current.currentTime = startTime;
         setCurrentTime(startTime);
       }
       videoRef.current.play();
+      if (cleanedAudioUrl && isComparingAudio) {
+        audioRef.current?.play();
+      }
       setIsPlaying(true);
     }
   };
+
+  // Synchronize audio routing between original video and AI-cleaned audio track
+  useEffect(() => {
+    if (!videoRef.current) return;
+
+    if (cleanedAudioUrl && isComparingAudio) {
+      // Mute original video track, play cleaned audio track
+      videoRef.current.muted = true;
+      if (audioRef.current) {
+        audioRef.current.muted = false;
+        audioRef.current.currentTime = videoRef.current.currentTime;
+        if (isPlaying) audioRef.current.play();
+      }
+    } else {
+      // Listen to original video audio track
+      videoRef.current.muted = false;
+      if (audioRef.current) {
+        audioRef.current.muted = true;
+        audioRef.current.pause();
+      }
+    }
+  }, [isComparingAudio, cleanedAudioUrl, isPlaying]);
 
   // AI Audio Noise Removal execution
   const handleTriggerNoiseRemoval = async () => {
@@ -137,10 +193,78 @@ export default function VideoEditorPage() {
     setTargetFormat('mp4');
     setCleanedAudioUrl(null);
     setIsComparingAudio(false);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.muted = false;
+    }
   };
 
-  const handleDownload = () => {
-    if (!videoUrl) return;
+  // Export video with trimmed range and remuxed audio
+  const handleDownload = async () => {
+    if (!videoUrl || !videoRef.current) return;
+
+    // Validate trim range before export
+    if (endTime > 0) {
+      const validation = validateTrimRange(startTime, endTime, duration);
+      if (!validation.isValid) {
+        alert(validation.error || 'Invalid trim range');
+        return;
+      }
+    }
+
+    setIsExporting(true);
+
+    try {
+      // Check if MediaRecorder is available for browser-side export remuxing
+      if (typeof window !== 'undefined' && 'MediaRecorder' in window && videoRef.current) {
+        const stream = createRemuxedStream(
+          videoRef.current,
+          audioRef.current || (videoRef.current as any)
+        );
+
+        const mimeType = targetFormat === 'webm' ? 'video/webm' : 'video/mp4;codecs=avc1';
+        const recorder = new MediaRecorder(stream, {
+          mimeType: MediaRecorder.isTypeSupported(mimeType) ? mimeType : 'video/webm',
+        });
+
+        const chunks: Blob[] = [];
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+          const exportBlob = new Blob(chunks, { type: recorder.mimeType });
+          const exportUrl = URL.createObjectURL(exportBlob);
+          const a = document.createElement('a');
+          a.href = exportUrl;
+          const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
+          a.download = `${nameWithoutExt}_edited.${targetFormat}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(exportUrl);
+          setIsExporting(false);
+        };
+
+        // Record trimmed segment
+        videoRef.current.currentTime = startTime;
+        recorder.start();
+        await videoRef.current.play();
+
+        const recordDurationMs = Math.max(500, (endTime - startTime) * 1000);
+        setTimeout(() => {
+          if (recorder.state === 'recording') {
+            recorder.stop();
+            videoRef.current?.pause();
+          }
+        }, recordDurationMs);
+        return;
+      }
+    } catch {
+      // Graceful fallback to direct download if MediaRecorder is blocked
+    }
+
+    // Direct download fallback
     const a = document.createElement('a');
     a.href = videoUrl;
     const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
@@ -148,6 +272,7 @@ export default function VideoEditorPage() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    setIsExporting(false);
   };
 
   return (
@@ -186,10 +311,22 @@ export default function VideoEditorPage() {
         videoUrl ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-4">
             <VideoPreview
+              ref={videoRef}
               videoUrl={videoUrl}
               onTimeUpdate={handleTimeUpdate}
               onDurationChange={handleDurationChange}
+              showControls={false}
             />
+
+            {/* Hidden audio element for synchronized cleaned audio playback */}
+            {cleanedAudioUrl && (
+              <audio
+                ref={audioRef}
+                src={cleanedAudioUrl}
+                crossOrigin="anonymous"
+                className="hidden"
+              />
+            )}
           </div>
         ) : (
           <div className="w-full max-w-lg p-6">
@@ -247,13 +384,33 @@ export default function VideoEditorPage() {
                     {VIDEO_TOOLS.find((t) => t.id === activeTool)?.label || activeTool}
                   </span>
                 </div>
+                {cleanedAudioUrl && (
+                  <div className="flex justify-between text-primary font-medium">
+                    <span>Audio Track:</span>
+                    <span>{isComparingAudio ? 'AI Cleaned' : 'Original'}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Button className="w-full" size="lg" onClick={handleDownload}>
-                <Download className="w-4 h-4 mr-2" />
-                Download Video
+              <Button
+                className="w-full"
+                size="lg"
+                disabled={isExporting}
+                onClick={handleDownload}
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Exporting Video...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export & Download
+                  </>
+                )}
               </Button>
               <Button
                 variant="outline"
@@ -271,4 +428,3 @@ export default function VideoEditorPage() {
     />
   );
 }
-

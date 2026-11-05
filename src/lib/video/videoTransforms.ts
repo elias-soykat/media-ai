@@ -64,22 +64,28 @@ export function calculateVideoCropRect(
 
   if (targetRatio < currentRatio) {
     // Target is narrower/taller than source (e.g. 16:9 to 9:16): clamp height, crop width
-    const targetWidth = Math.round(sourceHeight * targetRatio);
+    let targetWidth = Math.round(sourceHeight * targetRatio);
+    if (targetWidth % 2 !== 0) targetWidth += 1;
+    let targetHeight = sourceHeight;
+    if (targetHeight % 2 !== 0) targetHeight += 1;
     const x = Math.round((sourceWidth - targetWidth) / 2);
     return {
       x,
       y: 0,
       width: targetWidth,
-      height: sourceHeight,
+      height: targetHeight,
     };
   } else {
     // Target is wider than source: clamp width, crop height
-    const targetHeight = Math.round(sourceWidth / targetRatio);
+    let targetHeight = Math.round(sourceWidth / targetRatio);
+    if (targetHeight % 2 !== 0) targetHeight += 1;
+    let targetWidth = sourceWidth;
+    if (targetWidth % 2 !== 0) targetWidth += 1;
     const y = Math.round((sourceHeight - targetHeight) / 2);
     return {
       x: 0,
       y,
-      width: sourceWidth,
+      width: targetWidth,
       height: targetHeight,
     };
   }
