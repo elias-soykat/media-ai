@@ -19,3 +19,4 @@ describe('AI Photo Provider Adapter', () => {
     expect(result.format).toBe('png');
   });
 });
+

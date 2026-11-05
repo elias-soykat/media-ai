@@ -30,3 +30,4 @@ describe('Background Changer Compositor', () => {
     expect(fitted.dy).toBe(200);
   });
 });
+

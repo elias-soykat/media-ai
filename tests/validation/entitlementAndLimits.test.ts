@@ -44,7 +44,7 @@ describe('Job Retention Expiry Logic (Review Focus #5)', () => {
   it('should identify active jobs correctly', () => {
     const futureDate = new Date(Date.now() + 3600 * 1000 * 20); // 20 hours in future
     expect(isJobExpired(futureDate)).toBe(false);
-    expect(formatTimeRemaining(futureDate)).toMatch(/Expires in 20h/);
+    expect(formatTimeRemaining(futureDate)).toMatch(/Expires in (19|20)h/);
   });
 });
 

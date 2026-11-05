@@ -40,3 +40,4 @@ describe('Image Transformations Engine', () => {
     expect(rect.y).toBe(0);
   });
 });
+

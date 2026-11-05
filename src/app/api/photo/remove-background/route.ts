@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     const jobId = crypto.randomUUID();
     const expiresAt = new Date(
-      Date.now() + APP_CONSTRAINTS.storage.mediaRetentionHours * 60 * 60 * 1000
+      Date.now() + APP_CONSTRAINTS.storage.retentionHours * 60 * 60 * 1000
     );
 
     // 3. Persist completed Job record & deduct credits if not free trial
@@ -85,8 +85,8 @@ export async function POST(req: NextRequest) {
             userId: user.id,
             toolType: 'PHOTO_BG_REMOVER',
             status: 'COMPLETED',
-            inputFileKey: imageUrl,
-            outputFileKey: result.outputUrl,
+            inputUrl: imageUrl,
+            outputUrl: result.outputUrl,
             expiresAt,
           },
         });
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
             data: {
               userId: user.id,
               amount: -cost,
-              description: 'AI Background Removal',
+              reason: 'AI Background Removal',
             },
           });
         }
@@ -133,3 +133,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

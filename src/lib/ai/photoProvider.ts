@@ -204,3 +204,4 @@ export function getPhotoAiProvider(providerName?: string): PhotoAiProvider {
       return new MockPhotoAiProvider();
   }
 }
+

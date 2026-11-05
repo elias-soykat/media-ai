@@ -34,3 +34,4 @@ describe('Image Enhancer Engine', () => {
     expect(presetNames).toContain('bw');
   });
 });
+

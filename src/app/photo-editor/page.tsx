@@ -278,7 +278,7 @@ export default function PhotoEditorPage() {
           <div className="w-full max-w-lg p-6">
             <MediaDropzone
               mediaType="photo"
-              onFileSelected={handleFileSelect}
+              onFileAccepted={handleFileSelect}
             />
           </div>
         )
@@ -329,3 +329,4 @@ export default function PhotoEditorPage() {
     />
   );
 }
+

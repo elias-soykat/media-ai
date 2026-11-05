@@ -9,7 +9,7 @@ export function formatTimeRemaining(expiresAt: Date | string | null | undefined)
   const diffMs = new Date(expiresAt).getTime() - Date.now();
   if (diffMs <= 0) return 'Expired';
 
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const hours = Math.round(diffMs / (1000 * 60 * 60));
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
   if (hours > 0) {

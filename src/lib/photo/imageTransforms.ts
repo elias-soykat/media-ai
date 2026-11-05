@@ -151,3 +151,4 @@ export function estimateCompressedSize(
     return Math.round(totalPixels * 0.6 * qFactor);
   }
 }
+

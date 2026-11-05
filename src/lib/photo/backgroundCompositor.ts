@@ -206,3 +206,4 @@ export function renderCompositedCanvas(options: CompositorOptions): HTMLCanvasEl
 
   return canvas;
 }
+

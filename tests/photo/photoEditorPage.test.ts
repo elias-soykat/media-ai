@@ -14,3 +14,4 @@ describe('Photo Editor Workspace Tools', () => {
     expect(ids).toContain('converter');
   });
 });
+

@@ -40,3 +40,4 @@ describe('POST /api/photo/remove-background', () => {
     expect(json.isFreeTrial).toBe(true);
   });
 });
+
