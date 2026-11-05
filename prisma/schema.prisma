@@ -1,10 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  passwordHash       String
+  creditBalance      Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  creditTransactions CreditTransaction[]
+  jobs               Job[]
+}
+
+model Job {
+  id           String    @id @default(cuid())
+  userId       String?
+  toolType     ToolType
+  status       JobStatus @default(PENDING)
+  inputUrl     String?
+  outputUrl    String?
+  metadata     Json?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  expiresAt    DateTime?
+  user         User?     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model SystemConstraint {
+  key         String   @id
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  reason      String
+  paddleTxnId String?  @unique
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum JobStatus {
@@ -28,55 +77,3 @@ enum ToolType {
   VIDEO_CONVERTER
   AUDIO_NOISE_REMOVER
 }
-
-model User {
-  id                 String              @id @default(cuid())
-  email              String              @unique
-  passwordHash       String
-  creditBalance      Int                 @default(0)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  jobs               Job[]
-  creditTransactions CreditTransaction[]
-}
-
-model Job {
-  id           String    @id @default(cuid())
-  userId       String?
-  toolType     ToolType
-  status       JobStatus @default(PENDING)
-  inputUrl     String?
-  outputUrl    String?
-  metadata     Json?
-  errorMessage String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  expiresAt    DateTime?
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([status])
-  @@index([expiresAt])
-}
-
-model SystemConstraint {
-  key         String   @id
-  value       Json
-  description String?
-  updatedAt   DateTime @updatedAt
-}
-
-model CreditTransaction {
-  id          String   @id @default(cuid())
-  userId      String
-  amount      Int
-  reason      String
-  paddleTxnId String?  @unique
-  createdAt   DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
