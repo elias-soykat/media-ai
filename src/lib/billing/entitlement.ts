@@ -19,7 +19,7 @@ export interface UserEligibilityResult {
 export function checkUserEligibility(input: UserEligibilityInput): UserEligibilityResult {
   const { user, toolType, completedJobsCountForTool } = input;
 
-  // Browser-native tools are always free for everyone
+  // Browser-native tools are always free for everyone.
   const browserNativeTools = [
     'PHOTO_ENHANCER',
     'PHOTO_CROPPER',
@@ -36,7 +36,7 @@ export function checkUserEligibility(input: UserEligibilityInput): UserEligibili
     return { eligible: true, isFreeTrial: false };
   }
 
-  // AI-powered tools require a user account
+  // AI-powered tools require a user account.
   if (!user) {
     return {
       eligible: false,
@@ -46,7 +46,7 @@ export function checkUserEligibility(input: UserEligibilityInput): UserEligibili
     };
   }
 
-  // Exactly 1 successful free run per feature per account
+  // Exactly 1 successful free run per feature per account.
   const freeTrialAllowance = APP_CONSTRAINTS.billing.initialFreeCredits;
   if (completedJobsCountForTool < freeTrialAllowance) {
     return { eligible: true, isFreeTrial: true };
