@@ -17,6 +17,7 @@ export interface AudioNoiseRemovalResult {
   error?: string;
 }
 
+/** Interface representing an audio noise isolation provider. */
 export interface AudioAiProvider {
   providerName: string;
   removeNoise(options: AudioNoiseRemovalInput): Promise<AudioNoiseRemovalResult>;
