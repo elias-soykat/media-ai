@@ -17,11 +17,11 @@ export const APP_CONSTRAINTS: AppConstraints = {
     supportedMimeTypes: ['audio/wav', 'audio/mpeg', 'audio/mp4'],
   },
   storage: {
-    retentionHours: 24, // 24 hours retention
-    signedUrlExpirySeconds: 3600, // 1 hour validity
+    retentionHours: 24, // 24 hours retention.
+    signedUrlExpirySeconds: 3600, // 1 hour validity.
   },
   billing: {
-    initialFreeCredits: 1, // Exactly 1 successful free run per feature
+    initialFreeCredits: 1, // Exactly 1 successful free run per feature.
     costs: {
       photoBackgroundRemoval: 1,
       photoBackgroundChanger: 1,
