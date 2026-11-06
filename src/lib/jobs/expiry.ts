@@ -1,3 +1,6 @@
+/**
+ * Checks whether a given expiration timestamp has elapsed.
+ */
 export function isJobExpired(expiresAt: Date | string | null | undefined): boolean {
   if (!expiresAt) return false;
   const expiryTime = new Date(expiresAt).getTime();
