@@ -9,6 +9,9 @@ export interface StorageKeyParams {
   extension: string;
 }
 
+/**
+ * Constructs an isolated S3/R2 storage key for temporary user media uploads.
+ */
 export function buildStorageKey({ userId, toolType, extension }: StorageKeyParams): string {
   const timestamp = Date.now();
   const randomStr = Math.random().toString(36).substring(2, 10);
