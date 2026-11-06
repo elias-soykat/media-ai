@@ -9,6 +9,7 @@ export interface LocalValidationResult {
   error: string | null;
 }
 
+/** Validates media files locally on the client before initiating upload. */
 export function validateFileLocally(
   file: File,
   mediaType: 'photo' | 'video' | 'audio',
