@@ -16,19 +16,19 @@ export const AUDIO_CLEANING_PRESETS: Record<string, NoiseRemovalPreset> = {
   balanced: {
     id: 'balanced',
     label: 'Balanced Speech',
-    description: 'Removes background hum and air conditioner noise while keeping voice natural',
+    description: 'Removes background hum and air conditioner noise while keeping voice natural.',
     intensity: 0.7,
   },
   aggressive: {
     id: 'aggressive',
     label: 'Aggressive Filter',
-    description: 'Deep reduction for wind, heavy traffic, and loud background chatter',
+    description: 'Deep reduction for wind, heavy traffic, and loud background chatter.',
     intensity: 0.95,
   },
   subtle: {
     id: 'subtle',
     label: 'Subtle Studio Polish',
-    description: 'Gentle noise floor suppression for podcast and interview microphones',
+    description: 'Gentle noise floor suppression for podcast and interview microphones.',
     intensity: 0.4,
   },
 };
