@@ -26,25 +26,25 @@ export const SUPPORTED_VIDEO_PRESETS: Record<string, AspectRatioPreset> = {
   '16:9': {
     id: '16:9',
     label: '16:9 Landscape',
-    description: 'YouTube, Television, Desktop screens',
+    description: 'YouTube, Television, Desktop screens.',
     ratio: 16 / 9,
   },
   '9:16': {
     id: '9:16',
     label: '9:16 Vertical',
-    description: 'TikTok, Instagram Reels, YouTube Shorts',
+    description: 'TikTok, Instagram Reels, YouTube Shorts.',
     ratio: 9 / 16,
   },
   '1:1': {
     id: '1:1',
     label: '1:1 Square',
-    description: 'Instagram Feed, LinkedIn',
+    description: 'Instagram Feed, LinkedIn.',
     ratio: 1,
   },
   '4:5': {
     id: '4:5',
     label: '4:5 Social Portrait',
-    description: 'Instagram and Facebook in-feed video',
+    description: 'Instagram and Facebook in-feed video.',
     ratio: 4 / 5,
   },
 };
