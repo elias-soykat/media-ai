@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { prisma } from '@/lib/prisma';
 import { APP_CONSTRAINTS } from '@/config/constraints';
 import { getMergedConstraints } from '@/lib/config/getMergedConstraints';
-import { validateMediaUpload, validateVideoConstraints } from '@/lib/validation/mediaValidator';
+import { validateMediaUpload } from '@/lib/validation/mediaValidator';
 import { enhanceImage, clampPixel, applyEnhancements, ENHANCEMENT_PRESETS } from '@/lib/photo/imageEnhancer';
 import { calculateTargetDimensions, calculateCropRect, formatToMimeType } from '@/lib/photo/imageTransforms';
 import { calculateFittedDimensions, BACKGROUND_PRESETS } from '@/lib/photo/backgroundCompositor';
