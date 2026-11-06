@@ -17,6 +17,7 @@ export interface BackgroundRemovalResult {
   error?: string;
 }
 
+/** Interface representing a photo processing AI provider. */
 export interface PhotoAiProvider {
   providerName: string;
   removeBackground(options: BackgroundRemovalInput): Promise<BackgroundRemovalResult>;
