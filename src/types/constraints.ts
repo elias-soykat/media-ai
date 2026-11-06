@@ -42,6 +42,7 @@ export interface RateLimits {
   paidJobsPerHour: number;
 }
 
+/** Global configuration schema defining limits and quotas across all media services. */
 export interface AppConstraints {
   photo: PhotoConstraints;
   video: VideoConstraints;
