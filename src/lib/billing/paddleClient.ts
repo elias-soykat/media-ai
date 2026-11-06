@@ -18,7 +18,7 @@ export const CREDIT_PACKS: Record<CreditPackId, CreditPack> = {
     credits: 50,
     priceUsd: 5,
     pricePerCredit: 0.1,
-    description: 'Great for occasional photo cutouts & audio cleanup',
+    description: 'Great for occasional photo cutouts & audio cleanup.',
   },
   pro: {
     id: 'pro',
@@ -26,7 +26,7 @@ export const CREDIT_PACKS: Record<CreditPackId, CreditPack> = {
     credits: 200,
     priceUsd: 15,
     pricePerCredit: 0.075,
-    description: 'Best value for frequent creators & podcasters',
+    description: 'Best value for frequent creators & podcasters.',
     isPopular: true,
   },
   studio: {
@@ -35,7 +35,7 @@ export const CREDIT_PACKS: Record<CreditPackId, CreditPack> = {
     credits: 500,
     priceUsd: 30,
     pricePerCredit: 0.06,
-    description: 'Maximum credits for high-volume video & photo workflows',
+    description: 'Maximum credits for high-volume video & photo workflows.',
   },
 };
 
